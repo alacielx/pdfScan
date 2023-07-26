@@ -1,4 +1,4 @@
-## UPDATED 07/24 1:34PM ##
+## UPDATED 07/25 10:26AM ##
 
 import os
 import re
@@ -15,8 +15,6 @@ from tkinter import filedialog
 from tkinter import messagebox
 import sys
 import configparser
-from PIL import Image
-import io
 
 test = False
 
@@ -62,51 +60,6 @@ def run_convert_from_path(pdf):
         print(f"Error occurred: {e}")
     except FileNotFoundError as e:
         print(f"Poppler not found: {e}")
-
-def image_to_data(np_image):
-    try:
-        tesseract_cmd = fr"C:\tesseract\Tesseract\tesseract.exe"
-        # Convert the NumPy image to a PIL Image
-        pil_image = Image.fromarray(np_image)
-
-        # Save the PIL Image to a temporary file (in memory)
-        temp_image = io.BytesIO()
-        pil_image.save(temp_image, format="PNG")
-        temp_image.seek(0)
-
-        # Read the image data as bytes
-        image_data_bytes = temp_image.read()
-
-        # Construct the command to run Tesseract with desired options
-        command = [
-            tesseract_cmd,
-            "stdin",  # Use stdin to read the image from a file-like object
-            "stdout",
-            "output_type=Output.DICT",
-            "--dpi",
-            "300",
-            "--oem",
-            "3",
-            "--psm",
-            "6",
-            "-l",
-            "eng",
-            "hocr"
-        ]
-
-        # Run Tesseract using subprocess and capture the output
-        process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, creationflags=subprocess.CREATE_NO_WINDOW)
-        extracted_data, _ = process.communicate(input=image_data_bytes)
-
-        # Decode the extracted_data to string
-        extracted_data = extracted_data.decode()
-
-        return extracted_data
-
-    except subprocess.CalledProcessError as e:
-        print(f"Error occurred: {e}")
-    except FileNotFoundError as e:
-        print(f"Tesseract not found: {e}")
 
 def ask_folder_directory():
     root = tk.Tk()
@@ -213,9 +166,7 @@ def find_text(text, data):
 
     if left is None or bottom is None or right is None or top is None:
         raise ValueError(f"Failed to find the bounding box for '{text}' text.")
-    # cropped_image = image[top:top+height, left:left+width]
-    # cv2.imshow("img", cropped_image)
-    # cv2.waitKey(0)
+    
     return left, top, width, height
 
 def find_text2(text, data):
@@ -247,9 +198,7 @@ def find_text2(text, data):
 
     if left is None or bottom is None or right is None or top is None:
         raise ValueError(f"Failed to find the bounding box for '{text}' text.")
-    # cropped_image = image[top:top+height, left:left+width]
-    # cv2.imshow("img", cropped_image)
-    # cv2.waitKey(0)
+
     return left, top, width, height
 
 def expand_and_crop(image, box, width, height, wpadding, hpadding):
@@ -271,14 +220,12 @@ def expand_and_crop(image, box, width, height, wpadding, hpadding):
     box_top = box_top - (int(new_height*hpadding/2))
     new_height = new_height + int(new_height*hpadding)
     cropped_image = image[box_top:box_top + new_height, box_left:box_left + new_width]
-    # cv2.imshow("img", cropped_image)
-    # cv2.waitKey(0)
+
     return cropped_image
 
 def preprocess_image(image, threshold=110):
     image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     # Apply linear contrast adjustment using the formula: output_image = alpha * input_image + beta
-    # image = cv2.convertScaleAbs(image, alpha=1.7, beta=0)
     _, image = cv2.threshold(image, threshold, 255, cv2.THRESH_BINARY)
 
     return image
@@ -314,7 +261,6 @@ for pdf in glob.glob(os.path.join(pdf_folder, "*.pdf")):
     #run convert_from_path without console pdf to image
     image = run_convert_from_path(pdf)
     image = image[1:int(image.shape[0]/2),int(image.shape[1]/5*2):image.shape[1]]
-    cv2.imwrite("img.jpg", image)
     image = preprocess_image(image)
     
     #MAKE THIS NOT SHOW CONSOLE
@@ -323,7 +269,6 @@ for pdf in glob.glob(os.path.join(pdf_folder, "*.pdf")):
     sales_order_box = find_text("SALES ORDER", data)
     if sales_order_box is not None:
         sales_order_image = expand_and_crop(image, sales_order_box, 200, 0, 5, 25)
-        cv2.imwrite("img_sales_order.jpg", sales_order_image)
         sales_order_text = pytesseract.image_to_string(sales_order_image, config=f"--psm 13")
         sales_order_text = sales_order_text.replace('\n','')
     else:
@@ -333,7 +278,6 @@ for pdf in glob.glob(os.path.join(pdf_folder, "*.pdf")):
     if address_box is not None:
         address_image = expand_and_crop(image, address_box, 445, 750, 10, 20)
         address_image = expand_and_crop(image, address_box, 1300, 1000, 50, 20)
-        cv2.imwrite("img_address.jpg", address_image)
         address_text = pytesseract.image_to_string(address_image, config=f"--psm 6")
     else:
         address_text = ""
@@ -366,7 +310,9 @@ for pdf in glob.glob(os.path.join(pdf_folder, "*.pdf")):
         new_file_path = os.path.join(pdf_folder,f"{new_file_name}_{count}.pdf")
         count += 1
     
-    if not address == "":
+    original_pdf_name = os.path.basename(pdf)
+
+    if not address == "" and not original_pdf_name == new_file_name:
         os.rename(pdf, new_file_path)
 
 messagebox.showinfo("PDF Scanning", "Done")
