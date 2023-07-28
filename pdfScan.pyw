@@ -1,4 +1,4 @@
-## UPDATED 07/25 10:26AM ##
+## UPDATED 07/28 ##
 
 import os
 import re
@@ -254,6 +254,7 @@ if test:
 poppler_dir = r"C:\poppler\poppler-23.07.0\Library\bin"
 
 count = 1
+not_renamed_count = 0
 
 pytesseract.pytesseract.tesseract_cmd = fr"C:\tesseract\Tesseract\tesseract.exe"
 
@@ -310,9 +311,19 @@ for pdf in glob.glob(os.path.join(pdf_folder, "*.pdf")):
         new_file_path = os.path.join(pdf_folder,f"{new_file_name}_{count}.pdf")
         count += 1
     
-    original_pdf_name = os.path.basename(pdf)
+    original_pdf_name = os.path.splitext(os.path.basename(pdf))[0]
 
-    if not address == "" and not original_pdf_name == new_file_name:
-        os.rename(pdf, new_file_path)
+    if not address == "" and not sales_order_number == "":
+        if not original_pdf_name == new_file_name:
+            os.rename(pdf, new_file_path)
+    else:
+        not_renamed_count += 1
 
-messagebox.showinfo("PDF Scanning", "Done")
+if not_renamed_count == 0:
+    message = "Done"
+elif not_renamed_count == 1:
+    message = f"{not_renamed_count} file was unable to be renamed :( \nPlease check."
+else:
+    message = f"{not_renamed_count} files were unable to be renamed :( \nPlease check."
+
+messagebox.showinfo("PDF Scanning", message)
