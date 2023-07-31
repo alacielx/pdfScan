@@ -1,4 +1,4 @@
-## UPDATED 07/28 ##
+## UPDATED 07/31 ##
 
 import os
 import re
@@ -15,8 +15,6 @@ from tkinter import filedialog
 from tkinter import messagebox
 import sys
 import configparser
-
-test = False
 
 # Function to sanitize file names
 def sanitize_name(file_name):
@@ -223,8 +221,11 @@ def expand_and_crop(image, box, width, height, wpadding, hpadding):
 
     return cropped_image
 
-def preprocess_image(image, threshold=110):
+def grayscale_image(image):
     image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    return image
+
+def preprocess_image(image, threshold=110):
     # Apply linear contrast adjustment using the formula: output_image = alpha * input_image + beta
     _, image = cv2.threshold(image, threshold, 255, cv2.THRESH_BINARY)
 
@@ -247,9 +248,10 @@ if not working_date == today:
     pdf_folder, working_date, installation_date, initials, add_so_number = read_config_file()
 
 #Change dir if in test mode
-if test:
-    current_folder = os.getcwd()
-    pdf_folder = fr"{current_folder}\pdfScan"
+current_directory = os.getcwd()
+folders = current_directory.split("\\")
+if folders[len(folders)-1] == "Test":
+    pdf_folder = fr"{current_directory}\pdfScan"
 
 poppler_dir = r"C:\poppler\poppler-23.07.0\Library\bin"
 
@@ -262,26 +264,30 @@ for pdf in glob.glob(os.path.join(pdf_folder, "*.pdf")):
     #run convert_from_path without console pdf to image
     image = run_convert_from_path(pdf)
     image = image[1:int(image.shape[0]/2),int(image.shape[1]/5*2):image.shape[1]]
-    image = preprocess_image(image)
-    
-    #MAKE THIS NOT SHOW CONSOLE
-    data = pytesseract.image_to_data(image, output_type=Output.DICT)
+    image = grayscale_image(image)
+    sales_order_text = ""
+    address_text = ""
 
-    sales_order_box = find_text("SALES ORDER", data)
-    if sales_order_box is not None:
-        sales_order_image = expand_and_crop(image, sales_order_box, 200, 0, 5, 25)
-        sales_order_text = pytesseract.image_to_string(sales_order_image, config=f"--psm 13")
-        sales_order_text = sales_order_text.replace('\n','')
-    else:
-        sales_order_text = ""
+    for i in range(1,4):
+        data = pytesseract.image_to_data(image, output_type=Output.DICT)
 
-    address_box = find_text("to:", data)
-    if address_box is not None:
-        address_image = expand_and_crop(image, address_box, 445, 750, 10, 20)
-        address_image = expand_and_crop(image, address_box, 1300, 1000, 50, 20)
-        address_text = pytesseract.image_to_string(address_image, config=f"--psm 6")
-    else:
-        address_text = ""
+        if sales_order_text == "":
+            sales_order_box = find_text("SALES ORDER", data)
+            if sales_order_box is not None:
+                sales_order_image = expand_and_crop(image, sales_order_box, 200, 0, 5, 25)
+                sales_order_text = pytesseract.image_to_string(sales_order_image, config=f"--psm 13")
+                sales_order_text = sales_order_text.replace('\n','')
+
+        if address_text == "":
+            address_box = find_text("to:", data)
+            if address_box is not None:
+                address_image = expand_and_crop(image, address_box, 445, 750, 10, 20)
+                address_image = expand_and_crop(image, address_box, 1300, 1000, 50, 20)
+                address_text = pytesseract.image_to_string(address_image, config=f"--psm 6")
+        
+        if not sales_order_text == "" and not address_text == "":
+            break
+        image = preprocess_image(image)
     
     sales_order_number = re.search(r'\d+', sales_order_text)
     
