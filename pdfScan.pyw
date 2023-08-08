@@ -1,4 +1,5 @@
 ## UPDATED 08/07/23 ##
+current_version = 'v1.1'
 
 import os
 import re
@@ -16,6 +17,43 @@ from tkinter import messagebox
 import sys
 import configparser
 from collections import Counter
+
+
+import requests
+import os
+import sys
+
+
+
+def update_executable():
+    repo_owner = 'alacielx'
+    repo_name = 'pdfScan'
+    repo_url = f'https://api.github.com/repos/{repo_owner}/{repo_name}/releases/latest'
+    response = requests.get(repo_url)
+    latest_version = response.json()['tag_name']
+
+    if latest_version > current_version:
+        download_updater(repo_url)
+        time.sleep(2)
+        subprocess.Popen(['pdfScanUpdater.exe'])
+        sys.exit()
+    else:
+        if os.path.exists('pdfScanUpdater.exe'):
+            os.remove('pdfScanUpdater.exe')
+
+def download_updater(repo_url):
+
+    response = requests.get(repo_url)
+    if response.status_code == 200:
+        release_data = response.json()
+        for asset in release_data.get("assets", []):
+            if asset["name"] == 'pdfScanUpdater.exe':
+                download_url = asset["browser_download_url"]
+
+    response = requests.get(download_url, stream=True)
+    with open('pdfScanUpdater.exe', 'wb') as new_exe:
+        for chunk in response.iter_content(chunk_size=8192):
+            new_exe.write(chunk)
 
 # Function to sanitize file names
 def sanitize_name(file_name):
@@ -61,15 +99,14 @@ def run_convert_from_path(pdf):
         print(f"Poppler not found: {e}")
 
 def ask_folder_directory():
-    root = tk.Tk()
-    root.withdraw()
     folder_selected = ""
 
-    while not folder_selected:
-        folder_selected = filedialog.askdirectory(title="Select PDF folder")
-        return os.path.normpath(folder_selected)
-    else:
+    folder_selected = filedialog.askdirectory(title="Select PDF folder")
+    
+    if not folder_selected:
         sys.exit()
+
+    return os.path.normpath(folder_selected)
 
 def create_config_file():
 
@@ -102,9 +139,6 @@ def read_config_file():
 def ask_installation_date():
     config = configparser.ConfigParser()
     config.read(config_file_name)
-    
-    root = tk.Tk()
-    root.withdraw()
 
     windowTitle = " "
     askInstallationMessage = "Enter Installation Date (ie. XX.XX):"
@@ -121,8 +155,7 @@ def ask_installation_date():
         config.write(configfile)
 
 def ask_initials():
-    root = tk.Tk()
-    root.withdraw()
+    
 
     windowTitle = " "
     askInstallationMessage = "Enter Initials:"
@@ -220,6 +253,11 @@ def adjust_contrast(image, contrast_factor):
     return adjusted_image
 
 #####################################################################################################
+
+update_executable()
+
+root = tk.Tk()
+root.withdraw()
 
 #Check if config file exists
 config_file_name = 'pdfScanConfig.ini'
@@ -363,4 +401,4 @@ elif not_renamed_count == 1:
 else:
     message = f"{not_renamed_count} files were unable to be renamed :( \nPlease check."
 
-messagebox.showinfo("PDF Scanning", message)
+messagebox.showinfo("PDF Scanning", message + " " + current_version)
