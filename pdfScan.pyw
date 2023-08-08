@@ -1,5 +1,5 @@
-## UPDATED 08/07/23 ##
-current_version = 'v1.1'
+## UPDATED 08/08/23 ##
+current_version = 'v1.2'
 
 import os
 import re
@@ -401,4 +401,4 @@ elif not_renamed_count == 1:
 else:
     message = f"{not_renamed_count} files were unable to be renamed :( \nPlease check."
 
-messagebox.showinfo("PDF Scanning", message + " " + current_version)
+messagebox.showinfo("PDF Scanning " + current_version, message)
