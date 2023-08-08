@@ -16,11 +16,7 @@ from tkinter import filedialog
 from tkinter import messagebox
 import sys
 import configparser
-from collections import Counter
-
-
 import requests
-import os
 import sys
 
 
