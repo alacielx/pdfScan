@@ -95,32 +95,32 @@ def update_pdfScan(current_folder):
     except Exception as e:
         print("An error occurred during the download of pdfScan:", str(e))
 
+def main():
+    # Packages to install and zips to download
+    required_packages = ['pip', 'PyPDF2', 'pdf2image', 'Pillow','opencv_python', 'pytesseract', 'PyMuPDF']
+    zip_downloads = {
+        'poppler': "https://github.com/oschwartz10612/poppler-windows/releases/download/v23.07.0-0/Release-23.07.0-0.zip",
+        'tesseract': "https://github.com/alacielx/Tesseract-Portable/raw/main/Tesseract.zip"
+    }
+    current_folder = os.getcwd()
+
+    install_packages(required_packages)
+    print("\n")
+
+    download_zip(zip_downloads)
+    print("\n")
+
+    update_pdfScan(current_folder)
+    print("\nPress any key to exit")
+
+    while True:
+        if msvcrt.kbhit():
+            key = msvcrt.getch()
+            break
 
 
-# Packages to install and zips to download
-required_packages = ['pip', 'PyPDF2', 'pdf2image', 'Pillow','opencv_python', 'pytesseract', 'PyMuPDF']
-zip_downloads = {
-    'poppler': "https://github.com/oschwartz10612/poppler-windows/releases/download/v23.07.0-0/Release-23.07.0-0.zip",
-    'tesseract': "https://github.com/alacielx/Tesseract-Portable/raw/main/Tesseract.zip"
-}
-current_folder = os.getcwd()
+    import os
+    import urllib.request
 
-install_packages(required_packages)
-print("\n")
-
-download_zip(zip_downloads)
-print("\n")
-
-update_pdfScan(current_folder)
-print("\nPress any key to exit")
-
-while True:
-    if msvcrt.kbhit():
-        key = msvcrt.getch()
-        break
-
-
-import os
-import urllib.request
-
-
+if __name__ == "__main__":
+    main()
