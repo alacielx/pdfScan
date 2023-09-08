@@ -1,5 +1,5 @@
 ## UPDATED 08/08/23 ##
-currentVersion = 'v1.51'
+currentVersion = 'v1.52'
 
 import os
 import re
