@@ -2,6 +2,7 @@ import os
 import tkinter as tk
 from tkinter import simpledialog
 from tkinter import filedialog
+from tkinter import messagebox
 import sys
 import configparser
 import sys
@@ -55,8 +56,14 @@ def readConfig(config_file_name):
 
     return config_props
 
-def askInput(message, windowTitle = " "):
+def askInput(message, windowTitle = " ", type = str):
     user_input = simpledialog.askstring(windowTitle, message)
+    
+    try:
+        type(user_input)
+    except:
+        messagebox.showinfo(" ", "Please enter correct type")
+        user_input = askInput(message, windowTitle, type)
     
     if user_input is None:
         sys.exit()
@@ -119,4 +126,3 @@ def downloadExecutable(repoUrl, repoUpdater):
     with open(repoUpdater, 'wb') as new_exe:
         for chunk in response.iter_content(chunk_size=8192):
             new_exe.write(chunk)
-
