@@ -1,5 +1,5 @@
-## UPDATED 08/08/23 ##
-currentVersion = 'v1.52'
+## UPDATED 10/05/23 ##
+currentVersion = 'v1.53'
 
 import os
 import re
@@ -12,7 +12,6 @@ import subprocess
 import cv2
 import tkinter as tk
 from tkinter import messagebox
-import sys
 import sys
 import fitz  # PyMuPDF
 from install_packages import download_zip
@@ -68,19 +67,19 @@ def findText(text, data):
     data_words = data['text']
     text=text.split(' ')
     start_index = -1
-    # for i in range(0,len(data_words)):
-    #     data_words[i] = re.sub(r'[^a-zA-Z0-9]', '', data_words[i])
-
     
+    foundWords = False
+
     for i in range(len(data_words) - len(text) + 1):
         wordsSet = data_words[i:i+len(text)]
         for i2 in range(len(wordsSet)):
-            if text[i2] in wordsSet[i2]:
+            if text == wordsSet:
                 start_index = i
                 end_index = i+len(text)-1
+                foundWords = True
                 break
-            else:
-                break
+        if foundWords:
+            break
             
     if start_index == -1:
         return None

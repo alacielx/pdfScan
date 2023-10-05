@@ -45,6 +45,7 @@ def updateConfig(config_file_name, config_props:dict):
     
     with open(config_file_name, 'w') as config_file:
         config.write(config_file)
+        config_file.flush()
     
 def readConfig(config_file_name):
     config_props = {}
@@ -71,7 +72,7 @@ def askInput(message, windowTitle = " ", type = str):
     return user_input
 
 # Function to sanitize file names
-def sanitizeName(file_name):
+def sanitizeName(file_name, character = "_"):
     
     file_name = file_name.split("\n")[0]
 
@@ -82,7 +83,7 @@ def sanitizeName(file_name):
         if file_name.endswith(invalid_char) or file_name.endswith(" "):
             file_name = file_name[:-len(invalid_char)]
         else:
-            file_name = file_name.replace(invalid_char, "_")
+            file_name = file_name.replace(invalid_char, character)
     
     return file_name
 
