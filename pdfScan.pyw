@@ -12,7 +12,6 @@ import subprocess
 import cv2
 import tkinter as tk
 from tkinter import messagebox
-import sys
 import fitz  # PyMuPDF
 from install_packages import download_zip
 from functions import *
