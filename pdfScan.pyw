@@ -206,7 +206,7 @@ updateConfig(config_file_name, configProps)
 # current_directory = os.getcwd()
 # folders = current_directory.split("\\")
 # if folders[len(folders)-1] == "Test":
-#     pdf_folder = fr"{current_directory}\pdfScan"
+pdf_folder = fr"C:\Users\agarza\OneDrive - Arrow Glass Industries\Documents\GitHub\pdfScan\testData"
 
 poppler_dir = r"C:\poppler\poppler-23.07.0\Library\bin"
 
