@@ -71,11 +71,13 @@ def findText(text, data):
 
     for i in range(len(data_words) - len(text) + 1):
         wordsSet = data_words[i:i+len(text)]
-        for i2 in range(len(wordsSet)):
-            if text == wordsSet:
+        for i2 in range(len(wordsSet)):     
+            if text[i2] in wordsSet[i2]:
                 start_index = i
                 end_index = i+len(text)-1
                 foundWords = True
+            else:
+                start_index = -1
                 break
         if foundWords:
             break
@@ -113,10 +115,10 @@ def expandAndCrop(image, box, width, height, wpadding, hpadding):
     wpadding = wpadding/100
     hpadding = hpadding/100
 
-    box_left = box_left - (int(new_width*wpadding/2))
-    new_width = new_width + int(new_width*wpadding)
-    box_top = box_top - (int(new_height*hpadding/2))
-    new_height = new_height + int(new_height*hpadding)
+    box_left = max(box_left - (int(new_width*wpadding/2)), 0)
+    new_width = min((new_width + int(new_width*wpadding)), (image.shape[1] - box_left))
+    box_top = max(box_top - (int(new_height*hpadding/2)), 0)
+    new_height = min((new_height + int(new_height*hpadding)), (image.shape[0] - box_top))
     cropped_image = image[box_top:box_top + new_height, box_left:box_left + new_width]
 
     return cropped_image
@@ -154,7 +156,7 @@ def adjustContrast(image, contrast_factor):
 
 #####################################################################################################
 
-updateExecutable(currentVersion, "pdfScan")
+# updateExecutable(currentVersion, "pdfScan")
 
 root = tk.Tk()
 root.withdraw()
@@ -206,149 +208,168 @@ updateConfig(config_file_name, configProps)
 # current_directory = os.getcwd()
 # folders = current_directory.split("\\")
 # if folders[len(folders)-1] == "Test":
-pdf_folder = fr"C:\Users\agarza\OneDrive - Arrow Glass Industries\Documents\GitHub\pdfScan\testData"
+# pdf_folder = fr"C:\Users\agarza\OneDrive - Arrow Glass Industries\Documents\GitHub\pdfScan\testData"
 
 poppler_dir = r"C:\poppler\poppler-23.07.0\Library\bin"
 
 duplicate_count = 1
 not_renamed_count = 0
+not_renamed_list = []
 
-if not os.path.exists("C:\tesseract\Tesseract\tesseract.exe"):
+if not os.path.exists(fr"C:\tesseract\Tesseract\tesseract.exe"):
     tesseract = {'tesseract': "https://github.com/alacielx/Tesseract-Portable/raw/main/Tesseract.zip"}
     download_zip(tesseract)
 
 pytesseract.pytesseract.tesseract_cmd = fr"C:\tesseract\Tesseract\tesseract.exe"
 
 for pdf in glob.glob(os.path.join(pdf_folder, "*.pdf")):
-
-    if os.path.basename(pdf).startswith("~$"):
-        continue  # Skip temporary files
-    
-    # Read pdf as numpy array
-    try:
-        image = getPdfPage(pdf,0)
-    except:
-        continue
-    try:
-        image = image[1:int(image.shape[0]/2),int(image.shape[1]/5*2):image.shape[1]]
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    except:
-        continue
-
-    preprocessed_image = cv2.GaussianBlur(image, (3, 3), 0)
-    preprocess_image_threashold = 110
-
-    so_text = ""
-    so_number = ""
-    address_text = ""
-    address = ""
-
-    so_number_list = [[],[]]
-    address_list = [[],[]]
-
-    address_pattern = r"\d+[-\d]*\s+\w+(?:-\w+)?(?:\s+\w*)?"
-
-    for i in np.arange(1.0,2.1,0.25):
+    # try:
+        if os.path.basename(pdf).startswith("~$"):
+            continue  # Skip temporary files
         
-        data = pytesseract.image_to_data(preprocessed_image, output_type=Output.DICT)
-        
-        # Get Sales Order Number
-        so_box = findText("SALES ORDER", data)
-        if so_box is not None and so_number == "":
-            so_image = expandAndCrop(preprocessed_image, so_box, 200, 0, 5, 25)
-            so_data = pytesseract.image_to_data(so_image, output_type=Output.DICT, config=f"--psm 13")
+        # Read pdf as numpy array
+        try:
+            image = getPdfPage(pdf,0)
+        except:
+            continue
+        try:
+            image = image[1:int(image.shape[0]/2),int(image.shape[1]/5*2):image.shape[1]]
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        except:
+            continue
+
+        preprocessed_image = cv2.GaussianBlur(image, (3, 3), 0)
+        preprocess_image_threashold = 110
+
+        so_text = ""
+        so_number = ""
+        address_text = ""
+        address = ""
+
+        so_number_list = [[],[]]
+        address_list = [[],[]]
+
+        address_pattern = r"\d+[-\d]*\s+\w+(?:-\w+)?(?:\s+\w*)?"
+
+        for i in np.arange(1.0,2.1,0.25):
             
-            for index, element in enumerate(so_data['text']):
-                match = re.search(r"^\d{8}$", element)
-                confidence = so_data['conf'][index]
+            data = pytesseract.image_to_data(preprocessed_image, output_type=Output.DICT)
+            
+            # Get Sales Order Number
+            so_box = findText("SALES ORDER", data)
+            if so_box is not None and so_number == "":
                 
-                if match and len(element) == 8:
-                    if confidence > 80:
-                        so_number = element
-                        break
+                so_image = expandAndCrop(preprocessed_image, so_box, 200, 0, 5, 25)
+
+                so_data = pytesseract.image_to_data(so_image, output_type=Output.DICT, config=f"--psm 13")
+                
+                for index, element in enumerate(so_data['text']):
+                    match = re.search(r"^\d{8}$", element)
+                    confidence = so_data['conf'][index]
+                    
+                    if match and len(element) == 8:
+                        if confidence > 80:
+                            so_number = element
+                            break
+                        else:
+                            so_number_list[0].append(element)
+                            so_number_list[1].append(confidence)
                     else:
-                        so_number_list[0].append(element)
-                        so_number_list[1].append(confidence)
-                else:
-                    continue
+                        continue
 
 
-        # Get Address
-        address_box = findText("to:", data)
-        if address_box is None:
-            address_box = findText("to;", data)
+            # Get Address
+            address_box = findText("to:", data)
+            if address_box is None:
+                address_box = findText("to;", data)
 
-        if address_box is not None and address == "":
-            address_image = expandAndCrop(preprocessed_image, address_box, 445, 750, 10, 20)
-            address_image = expandAndCrop(preprocessed_image, address_box, 1300, 1000, 50, 20)
-            
-            address_data = pytesseract.image_to_data(address_image, output_type=Output.DICT, config=f"--psm 6")
-
-            address_text = " ".join(address_data['text'])
-
-            # Find the address pattern in the string
-            address_match = re.search(address_pattern, address_text)
-            if not address_text[address_match.start() - 1] == " ":
-                address_match = None
-
-            # Get address if conf >90, otherwise add to list to pick highest confidence later
-            if address_match:
-                address_text = address_match.group().split(" ")
-            
-
-                start_index = address_data['text'].index(address_text[0])
-                confidence = address_data['conf'][start_index:start_index + len(address_text)]
-                confidence = sum(confidence) / len(confidence)
+            if address_box is not None and address == "":
+                address_image = expandAndCrop(preprocessed_image, address_box, 445, 750, 10, 20)
+                address_image = expandAndCrop(preprocessed_image, address_box, 1300, 1000, 50, 20)
                 
-                if confidence > 90:
-                    address = address_match.group()
-                    address = sanitizeName(address)
-                else:
-                    address_list[0].append(address_match.group())
-                    address_list[1].append(confidence)
+                address_data = pytesseract.image_to_data(address_image, output_type=Output.DICT, config=f"--psm 6")
 
-        if not so_number == "" and not address == "":
-            break
+                characters_to_remove = ",)(\/.!@#$%^&*"
+                new_words = []
+                
+                for word in address_data['text']:
+                    for char in characters_to_remove:
+                        word = word.replace(char, '')
+                    new_words.append(word)
+                        
+                address_text = " ".join(new_words)
+                
+
+                # Find the address pattern in the string
+                address_match = re.search(address_pattern, address_text)
+                if not address_text[address_match.start() - 1] == " ":
+                    address_match = None
+
+                # Get address if conf >90, otherwise add to list to pick highest confidence later
+                if address_match:
+                    address_text = address_match.group().split(" ")
+                
+
+                    start_index = new_words.index(address_text[0])
+                    confidence = address_data['conf'][start_index:start_index + len(address_text)]
+                    confidence = sum(confidence) / len(confidence)
+                    
+                    if confidence > 90:
+                        address = address_match.group()
+                        address = sanitizeName(address)
+                    else:
+                        address_list[0].append(address_match.group())
+                        address_list[1].append(confidence)
+
+            if not so_number == "" and not address == "":
+                break
+            
+            preprocessed_image = adjustContrast(image,i)
+
+        if so_number == "" and so_number_list[0]:
+            max_index = so_number_list[1].index(max(so_number_list[1]))
+            so_number = so_number_list[0][max_index]
         
-        preprocessed_image = adjustContrast(image,i)
+        if address == "" and address_list[0]:
+            max_index = address_list[1].index(max(address_list[1]))
+            address = address_list[0][max_index]
 
-    if so_number == "" and so_number_list[0]:
-        max_index = so_number_list[1].index(max(so_number_list[1]))
-        so_number = so_number_list[0][max_index]
+        
+        new_file_name = f"{address}-{installation_date}-{initials}"
+
+        if add_so_number == 'True':
+            new_file_name = f"{new_file_name}-{so_number}"
+
+        new_file_path = os.path.join(pdf_folder,f"{new_file_name}.pdf")
+
+        while os.path.exists(new_file_path):
+            new_file_path = os.path.join(pdf_folder,f"{new_file_name}_{duplicate_count}.pdf")
+            duplicate_count += 1
+        
+        original_pdf_name = os.path.splitext(os.path.basename(pdf))[0]
+
+        if not address == "" and not so_number == "":
+            if not original_pdf_name == new_file_name:
+                try:
+                    os.rename(pdf, new_file_path)
+                except:
+                    not_renamed_count += 1
+                    continue
+        else:
+            not_renamed_count += 1
+            not_renamed_list.append(original_pdf_name)
+            
+    # except Exception as e:
+    #     print(f"Caught a generic exception: {e}")
+    #     continue
     
-    if address == "" and address_list[0]:
-        max_index = address_list[1].index(max(address_list[1]))
-        address = address_list[0][max_index]
-
-    
-    new_file_name = f"{address}-{installation_date}-{initials}"
-
-    if add_so_number == 'True':
-        new_file_name = f"{new_file_name}-{so_number}"
-
-    new_file_path = os.path.join(pdf_folder,f"{new_file_name}.pdf")
-
-    while os.path.exists(new_file_path):
-        new_file_path = os.path.join(pdf_folder,f"{new_file_name}_{duplicate_count}.pdf")
-        duplicate_count += 1
-    
-    original_pdf_name = os.path.splitext(os.path.basename(pdf))[0]
-
-    if not address == "" and not so_number == "":
-        if not original_pdf_name == new_file_name:
-            try:
-                os.rename(pdf, new_file_path)
-            except:
-                not_renamed_count += 1
-                continue
-    else:
-        not_renamed_count += 1
-
 if not_renamed_count == 0:
     message = "Done"
 elif not_renamed_count == 1:
     message = f"{not_renamed_count} file was unable to be renamed :( \nPlease check."
+    message = message + f"\n\n{not_renamed_list}"
 else:
     message = f"{not_renamed_count} files were unable to be renamed :( \nPlease check."
+    message = message + f"\n\n{not_renamed_list}"
 
 messagebox.showinfo("PDF Scanning " + currentVersion, message)

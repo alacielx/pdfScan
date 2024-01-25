@@ -5,7 +5,6 @@ import zipfile
 import msvcrt
 import subprocess
 import pkg_resources
-import filecmp
 import hashlib
 
 def install_packages(package_list):
