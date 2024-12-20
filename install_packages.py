@@ -1,11 +1,11 @@
-import os
 import importlib
 import urllib.request
 import zipfile
 import msvcrt
 import subprocess
-import pkg_resources
+from importlib.metadata import distribution
 import hashlib
+import os
 
 def install_packages(package_list):
     for package in package_list:
@@ -14,13 +14,13 @@ def install_packages(package_list):
             print(f"{package} is already installed.")
             try:
                 # Get the installed version of the package
-                installed_version = pkg_resources.get_distribution(package).version
+                installed_version = distribution(package).metadata["Version"]
                 
                 # Install the latest version if available
                 subprocess.check_call(['python', '-m', 'pip', 'install', '--upgrade', package])
                 
                 # Check if the package was actually updated
-                updated_version = pkg_resources.get_distribution(package).version
+                updated_version = distribution(package).metadata["Version"]
                 if updated_version != installed_version:
                     print(f"{package} has been successfully updated to version {updated_version}.")
                 else:
@@ -116,10 +116,6 @@ def main():
         if msvcrt.kbhit():
             key = msvcrt.getch()
             break
-
-
-    import os
-    import urllib.request
 
 if __name__ == "__main__":
     main()
